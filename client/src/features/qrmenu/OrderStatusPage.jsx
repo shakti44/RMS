@@ -27,7 +27,7 @@ export default function OrderStatusPage() {
 
   const { data: order, refetch } = useQuery({
     queryKey: ['order-status', orderId],
-    queryFn:  () => api.get(`/orders/${orderId}`).then((r) => r.data.data),
+    queryFn:  () => api.get(`/orders/public/${orderId}`).then((r) => r.data.data),
     enabled:  !!orderId,
   });
 
