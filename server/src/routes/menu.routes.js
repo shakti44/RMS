@@ -36,21 +36,24 @@ router.get('/public/tenant/:tenantSlug/restaurant', asyncHandler(async (req, res
 }));
 
 router.get('/public/:restaurantId', asyncHandler(async (req, res) => {
-  const { tenant }       = req;
   const { restaurantId } = req.params;
 
+  // Verify restaurant exists
+  const restaurant = await db('restaurants').where({ id: restaurantId }).first();
+  if (!restaurant) throw ApiError.notFound('Restaurant not found');
+
   const categories = await db('categories')
-    .where({ tenant_id: tenant.id, restaurant_id: restaurantId, is_active: true })
+    .where({ tenant_id: restaurant.tenant_id, restaurant_id: restaurantId, is_active: true })
     .orderBy('sort_order');
 
   const items = await db('menu_items')
-    .where({ tenant_id: tenant.id, restaurant_id: restaurantId, is_available: true })
+    .where({ tenant_id: restaurant.tenant_id, restaurant_id: restaurantId, is_available: true })
     .orderBy(['category_id', 'sort_order']);
 
   const itemsWithMods = await Promise.all(
     items.map(async (item) => {
       const groups = await db('modifier_groups')
-        .where({ tenant_id: tenant.id, menu_item_id: item.id });
+        .where({ tenant_id: restaurant.tenant_id, menu_item_id: item.id });
       for (const g of groups) {
         g.options = await db('modifier_options')
           .where({ modifier_group_id: g.id, is_available: true });
@@ -64,7 +67,7 @@ router.get('/public/:restaurantId', asyncHandler(async (req, res) => {
     items: itemsWithMods.filter((i) => i.category_id === cat.id),
   }));
 
-  res.json({ success: true, data: grouped });
+  res.json({ success: true, data: grouped, restaurantName: restaurant.name });
 }));
 
 router.get('/public/item/:itemId', asyncHandler(async (req, res) => {
