@@ -1,0 +1,85 @@
+version: '3.9'
+
+services:
+  # ── PostgreSQL ────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: rms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       rms_db
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/src/db/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rms_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend ───────────────────────────────────────────────────
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: rms_server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV:              production
+      PORT:                  4000
+      DB_HOST:               postgres
+      DB_PORT:               5432
+      DB_NAME:               rms_db
+      DB_USER:               postgres
+      DB_PASSWORD:           ${DB_PASSWORD:-postgres}
+      JWT_ACCESS_SECRET:     ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}
+      JWT_REFRESH_SECRET:    ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
+      JWT_ACCESS_EXPIRY:     15m
+      JWT_REFRESH_EXPIRY:    7d
+      CLIENT_URL:            ${CLIENT_URL:-http://localhost}
+      LOG_LEVEL:             info
+    ports:
+      - "4000:4000"
+    volumes:
+      - server_logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Frontend (Nginx serving built React) ─────────────────────
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: rms_client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      server:
+        condition: service_healthy
+
+  # ── Adminer (DB GUI — disable in prod) ───────────────────────
+  adminer:
+    image: adminer:latest
+    container_name: rms_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    profiles:
+      - dev    # only starts with: docker-compose --profile dev up
+
+volumes:
+  postgres_data:
+  server_logs:
