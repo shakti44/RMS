@@ -162,6 +162,12 @@ export default function MenuBrowsePage() {
   const [restaurantId, setRestaurantId] = useState(params.get('restaurant'));
   const [resolving, setResolving]       = useState(!params.get('restaurant'));
 
+  // Set tenantSlug in localStorage so axiosInstance sends X-Tenant-Slug header
+  useEffect(() => {
+    localStorage.setItem('tenantSlug', tenantSlug);
+    return () => localStorage.removeItem('tenantSlug');
+  }, [tenantSlug]);
+
   // If no restaurantId in URL, look it up by tenantSlug
   useEffect(() => {
     if (restaurantId) return;
