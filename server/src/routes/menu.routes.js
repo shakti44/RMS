@@ -25,6 +25,16 @@ const { authenticate } = require('../middleware/auth');
 const tenantResolver   = require('../middleware/tenantResolver');
 
 // ── Public routes (no auth needed) ───────────────────────────────────────────
+
+// Resolve default restaurant for a tenant (used when no restaurantId in QR URL)
+router.get('/public/tenant/:tenantSlug/restaurant', asyncHandler(async (req, res) => {
+  const tenant = await db('tenants').where({ slug: req.params.tenantSlug, is_active: true }).first();
+  if (!tenant) throw ApiError.notFound('Restaurant not found');
+  const restaurant = await db('restaurants').where({ tenant_id: tenant.id }).first();
+  if (!restaurant) throw ApiError.notFound('Restaurant not found');
+  res.json({ success: true, data: { restaurantId: restaurant.id, tenantName: tenant.name } });
+}));
+
 router.get('/public/:restaurantId', asyncHandler(async (req, res) => {
   const { tenant }       = req;
   const { restaurantId } = req.params;

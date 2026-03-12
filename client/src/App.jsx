@@ -5,6 +5,7 @@ import AppShell                  from './components/layout/AppShell';
 
 // Pages
 import LoginPage          from './features/auth/LoginPage';
+import RegisterPage       from './features/auth/RegisterPage';
 import DashboardPage      from './features/dashboard/DashboardPage';
 import POSPage            from './features/pos/POSPage';
 import KDSPage            from './features/kds/KDSPage';
@@ -61,7 +62,8 @@ export default function App() {
         />
 
         {/* Auth */}
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login"    element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
         {/* Authenticated staff routes */}
         <Route

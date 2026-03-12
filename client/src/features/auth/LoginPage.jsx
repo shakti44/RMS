@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { UtensilsCrossed, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -81,8 +81,11 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-orange-100 text-xs mt-6">
-          Multi-tenant Restaurant Management System
+        <p className="text-center text-orange-100 text-sm mt-6">
+          New restaurant?{' '}
+          <Link to="/register" className="font-semibold underline hover:text-white">
+            Sign up free →
+          </Link>
         </p>
       </div>
     </div>

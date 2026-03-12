@@ -8,7 +8,7 @@
  *  - Floating cart bar
  *  - Real-time order status after placing
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
@@ -159,9 +159,26 @@ export default function MenuBrowsePage() {
   const { tenantSlug }  = useParams();
   const [params]        = useSearchParams();
   const tableToken      = params.get('table');
-  const restaurantId    = params.get('restaurant');
+  const [restaurantId, setRestaurantId] = useState(params.get('restaurant'));
+  const [resolving, setResolving]       = useState(!params.get('restaurant'));
 
-  // In a real app, validate table token via API first
+  // If no restaurantId in URL, look it up by tenantSlug
+  useEffect(() => {
+    if (restaurantId) return;
+    api.get(`/menu/public/tenant/${tenantSlug}/restaurant`)
+      .then((r) => setRestaurantId(r.data.data.restaurantId))
+      .catch(() => toast.error('Restaurant not found'))
+      .finally(() => setResolving(false));
+  }, [tenantSlug, restaurantId]);
+
+  if (resolving) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <CartProvider>
       <MenuContent restaurantId={restaurantId} tableId={tableToken} />
